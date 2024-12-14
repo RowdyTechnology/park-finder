@@ -1,9 +1,15 @@
-from flask import Flask
-from blueprints.parks import parks_bp
-from blueprints.feature_requests import feature_requests_bp
-from blueprints.utility_pages import utility_pages_bp
-from blueprints.user_stats import user_stats_bp
+from flask import (
+    Flask,
+    request,
+    jsonify,
+    send_from_directory,
+    render_template,
+)
+import csv
 import os
+import math
+from datetime import datetime
+from werkzeug.utils import secure_filename
 import logging
 
 # --------------------------
@@ -21,15 +27,11 @@ CSV_FILE = os.getenv("CSV_FILE", "/mnt/user/appdata/parks/data.csv")
 HOME_POINT_FILE = os.getenv("HOME_POINT_FILE", "/mnt/user/appdata/parks/home_point.csv")
 FEATURE_REQUESTS_FILE = os.getenv("FEATURE_REQUESTS_FILE", "/mnt/user/appdata/parks/feature_requests.csv")
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif"}
-app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER  # Correctly configure app.config
+app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
 # Ensure necessary folders and files exist
-# Use os.path.join to create correct paths
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)  # Create uploads directory
-os.makedirs(os.path.join(os.path.dirname(CSV_FILE)), exist_ok=True)  # Create data directory
-os.makedirs(os.path.join(os.path.dirname(HOME_POINT_FILE)), exist_ok=True)  # Create data directory
-os.makedirs(os.path.join(os.path.dirname(FEATURE_REQUESTS_FILE)), exist_ok=True)  # Create data directory
-
+for path in [UPLOAD_FOLDER, CSV_FILE, HOME_POINT_FILE, FEATURE_REQUESTS_FILE]:
+    os.makedirs(os.path.dirname(path), exist_ok=True)
 if not os.path.exists(CSV_FILE):
     with open(CSV_FILE, mode="w", newline="") as file:
         writer = csv.DictWriter(
@@ -65,11 +67,199 @@ if not os.path.exists(FEATURE_REQUESTS_FILE):
         )
         writer.writeheader()
 
-# Register Blueprints
-app.register_blueprint(parks_bp, url_prefix="/parks")
-app.register_blueprint(feature_requests_bp, url_prefix="/feature_requests")
-app.register_blueprint(utility_pages_bp)
-app.register_blueprint(user_stats_bp, url_prefix="/user_stats")
+# --------------------------
+# Utility Functions
+# --------------------------
+def allowed_file(filename):
+    """Check if the uploaded file is allowed."""
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+def read_csv(file_path, fieldnames):
+    """Generic function to read CSV data."""
+    data = []
+    if os.path.exists(file_path):
+        with open(file_path, mode="r") as file:
+            reader = csv.DictReader(file)
+            for row in reader:
+                data.append(row)
+    return data
+
+
+def write_csv(file_path, data, fieldnames):
+    """Generic function to write CSV data."""
+    with open(file_path, mode="w", newline="") as file:
+        writer = csv.DictWriter(file, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(data)
+
+
+def append_csv(file_path, data, fieldnames):
+    """Append a single row to a CSV file."""
+    with open(file_path, mode="a", newline="") as file:
+        writer = csv.DictWriter(file, fieldnames=fieldnames)
+        writer.writerow(data)
+
+
+def calculate_average_ratings(ratings):
+    """Calculate the average rating from multiple categories."""
+    valid_ratings = [r for r in ratings if isinstance(r, (int, float))]
+    return round(sum(valid_ratings) / len(valid_ratings), 2) if valid_ratings else 0
+
+
+# --------------------------
+# Routes: Parks Management
+# --------------------------
+@app.route("/add_park", methods=["POST"])
+def add_park():
+    try:
+        file = request.files.get("photo")
+        filename = ""
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
+
+        latitude = float(request.form.get("latitude"))
+        longitude = float(request.form.get("longitude"))
+        ratings = {
+            key: int(request.form[key])
+            for key in [
+                "crowd_rating",
+                "obstacle_rating",
+                "size_rating",
+                "visibility_rating",
+                "diversity_rating",
+            ]
+        }
+        data = {
+            "name": request.form["name"],
+            "latitude": latitude,
+            "longitude": longitude,
+            "crowd_rating": ratings["crowd_rating"],
+            "obstacle_rating": ratings["obstacle_rating"],
+            "size_rating": ratings["size_rating"],
+            "visibility_rating": ratings["visibility_rating"],
+            "diversity_rating": ratings["diversity_rating"],
+            "photo": f"/uploads/{filename}" if filename else "",
+            "date_visited": request.form.get("date_visited", datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")),
+            "username": request.form.get("username", "Unknown"),
+        }
+        parks = read_csv(CSV_FILE, fieldnames=data.keys())
+        parks.append(data)
+        write_csv(CSV_FILE, parks, fieldnames=data.keys())
+        return jsonify({"message": "Park added successfully!"})
+    except Exception as e:
+        logging.error(f"Error adding park: {e}")
+        return jsonify({"error": "Failed to add park."}), 500
+
+
+@app.route("/view_parks", methods=["GET"])
+def view_parks():
+    try:
+        parks = read_csv(CSV_FILE, fieldnames=None)
+        for park in parks:
+            ratings = [
+                int(park.get("crowd_rating", 0)),
+                int(park.get("obstacle_rating", 0)),
+                int(park.get("size_rating", 0)),
+                int(park.get("visibility_rating", 0)),
+                int(park.get("diversity_rating", 0)),
+            ]
+            park["average_rating"] = calculate_average_ratings(ratings)
+        return jsonify(parks)
+    except Exception as e:
+        logging.error(f"Error retrieving parks: {e}")
+        return jsonify({"error": "Failed to retrieve parks."}), 500
+
+
+@app.route("/delete_park/<int:index>", methods=["DELETE"])
+def delete_park(index):
+    try:
+        parks = read_csv(CSV_FILE, fieldnames=None)
+        if 0 <= index < len(parks):
+            parks.pop(index)
+            write_csv(CSV_FILE, parks, fieldnames=parks[0].keys())
+            return jsonify({"message": "Park deleted successfully!"})
+        else:
+            return jsonify({"error": "Invalid index"}), 404
+    except Exception as e:
+        logging.error(f"Error deleting park: {e}")
+        return jsonify({"error": "Failed to delete park."}), 500
+
+# --------------------------
+# Routes: Feature Requests
+# --------------------------
+@app.route("/submit_feature_request", methods=["POST"])
+def submit_feature_request():
+    try:
+        data = {
+            "title": request.json.get("title", ""),
+            "description": request.json.get("description", ""),
+            "priority": request.json.get("priority", ""),
+            "date_submitted": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
+        }
+        append_csv(FEATURE_REQUESTS_FILE, data, fieldnames=data.keys())
+        return jsonify({"message": "Feature request submitted successfully!"})
+    except Exception as e:
+        logging.error(f"Error submitting feature request: {e}")
+        return jsonify({"error": "Failed to submit feature request."}), 500
+
+
+@app.route("/view_feature_requests", methods=["GET"])
+def view_feature_requests():
+    try:
+        feature_requests = read_csv(FEATURE_REQUESTS_FILE, fieldnames=None)
+        return jsonify(feature_requests)
+    except Exception as e:
+        logging.error(f"Error retrieving feature requests: {e}")
+        return jsonify({"error": "Failed to retrieve feature requests."}), 500
+
+# --------------------------
+# Routes: Utility Pages
+# --------------------------
+@app.route("/")
+def home():
+    return render_template("index.html")
+
+
+@app.route("/parks")
+def parks_page():
+    return render_template("parks.html")
+
+
+@app.route("/feature_request")
+def feature_request_page():
+    return render_template("feature_request.html")
+
+
+@app.route("/view_feature_requests_page")
+def view_feature_requests_page():
+    return render_template("view_feature_requests.html")
+
+
+@app.route("/user_stats")
+def user_stats():
+    parks = read_csv(CSV_FILE, fieldnames=None)
+    stats = {}
+    for park in parks:
+        username = park.get("username", "Unknown")
+        if username not in stats:
+            stats[username] = {"num_parks": 0, "average_rating": 0}
+        stats[username]["num_parks"] += 1
+        ratings = [
+            int(park.get("crowd_rating", 0)),
+            int(park.get("obstacle_rating", 0)),
+            int(park.get("size_rating", 0)),
+            int(park.get("visibility_rating", 0)),
+            int(park.get("diversity_rating", 0)),
+        ]
+        stats[username]["average_rating"] += calculate_average_ratings(ratings)
+    return render_template("user_stats.html", user_stats=stats)
+
+
+@app.route("/uploads/<filename>")
+def uploaded_file(filename):
+    return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
 
 # --------------------------
 # Main Application
