@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1, minimum-scale=1">
+    <title>Add Park - Parks Finder</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        .rating-scale {
+            display: flex;
+            flex-wrap: nowrap; /* Default: one row */
+            justify-content: center;
+            gap: 5px;
+        }
+        .rating-scale label {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            margin: 0;
+            flex: 1;
+            max-width: 10%; /* Each bubble gets equal space */
+        }
+        .info-icon {
+            cursor: pointer;
+            margin-left: 5px;
+        }
+        @media (max-width: 768px) {
+            .rating-scale {
+                flex-wrap: wrap; /* Wrap into two rows on smaller screens */
+            }
+            .rating-scale label {
+                max-width: 20%; /* Two rows of 5 bubbles */
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation Bar -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container-fluid">
+        <!-- Navbar Brand -->
+        <a class="navbar-brand" href="/">Parks Finder | a noble quest</a>
+
+        <!-- Right-Aligned Buttons -->
+        <div class="d-flex align-items-center ms-auto">
+            <!-- Dark Mode Toggle (Mobile) -->
+            <button id="darkModeToggleMobile" class="btn btn-outline-light me-2 d-lg-none">
+                <i id="themeIcon" class="bi bi-moon"></i>
+            </button>
+
+            <!-- Navbar Toggler -->
+            <button
+                class="navbar-toggler"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#navbarNav"
+                aria-controls="navbarNav"
+                aria-expanded="false"
+                aria-label="Toggle navigation"
+            >
+                <span class="navbar-toggler-icon"></span>
+            </button>
+        </div>
+
+        <!-- Navbar Links -->
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <a class="nav-link active" href="/">Add Park</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/parks">View Parks</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/feature_request">Submit Feature Request</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/view_feature_requests">View Feature Requests</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/user_stats">User Stats</a>
+                </li>
+            </ul>
+            <!-- Dark Mode Toggle (Desktop) -->
+            <button id="darkModeToggleDesktop" class="btn btn-outline-light d-none d-lg-inline-block ms-2">
+                <i id="themeIconDesktop" class="bi bi-moon"></i>
+            </button>
+        </div>
+    </div>
+</nav>
+
+
+    <div class="container mt-4">
+        <!-- Form to Add a Park -->
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5>Add a New Park</h5>
+            </div>
+            <div class="card-body">
+                <form id="addParkForm" enctype="multipart/form-data">
+                    <!-- Park Name -->
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Park Name</label>
+                        <input type="text" class="form-control" id="name" name="name" placeholder="Enter park name" required>
+                    </div>				
+
+					<!-- Username -->
+					<div class="mb-3">
+						<label for="username" class="form-label">Username</label>
+						<input type="text" class="form-control" id="username" name="username" placeholder="Enter your username" required>
+					</div>
+
+                    <!-- Latitude and Longitude -->
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="latitude" class="form-label">Latitude</label>
+                            <input type="text" class="form-control" id="latitude" name="latitude" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="longitude" class="form-label">Longitude</label>
+                            <input type="text" class="form-control" id="longitude" name="longitude" required>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-outline-primary mb-3" id="getLocation">
+                        <i class="bi bi-geo-alt"></i> Get Current Location
+                    </button>
+
+                    <!-- Date and Time Visited -->
+                    <div class="mb-3">
+                        <label for="dateVisited" class="form-label">Date and Time Visited</label>
+                        <div class="d-flex">
+                            <input type="text" class="form-control me-2" id="dateVisited" name="date_visited" readonly>
+                            <button type="button" class="btn btn-outline-primary" id="setDateTime">
+                                <i class="bi bi-calendar-event"></i> Record Date & Time
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Ratings -->
+                    <div class="mb-3">
+                        <label class="form-label">Crowd Rating <i class="bi bi-question-circle info-icon" data-bs-toggle="modal" data-bs-target="#crowdRatingModal"></i></label>
+                        <div class="rating-scale">
+                            {% for i in range(1, 11) %}
+                            <label>
+                                <input type="radio" name="crowd_rating" value="{{ i }}" required>
+                                <span>{{ i }}</span>
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Obstacle Rating <i class="bi bi-question-circle info-icon" data-bs-toggle="modal" data-bs-target="#obstacleRatingModal"></i></label>
+                        <div class="rating-scale">
+                            {% for i in range(1, 11) %}
+                            <label>
+                                <input type="radio" name="obstacle_rating" value="{{ i }}" required>
+                                <span>{{ i }}</span>
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Size Rating <i class="bi bi-question-circle info-icon" data-bs-toggle="modal" data-bs-target="#sizeRatingModal"></i></label>
+                        <div class="rating-scale">
+                            {% for i in range(1, 11) %}
+                            <label>
+                                <input type="radio" name="size_rating" value="{{ i }}" required>
+                                <span>{{ i }}</span>
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Visibility Rating <i class="bi bi-question-circle info-icon" data-bs-toggle="modal" data-bs-target="#visibilityRatingModal"></i></label>
+                        <div class="rating-scale">
+                            {% for i in range(1, 11) %}
+                            <label>
+                                <input type="radio" name="visibility_rating" value="{{ i }}" required>
+                                <span>{{ i }}</span>
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Diversity Rating <i class="bi bi-question-circle info-icon" data-bs-toggle="modal" data-bs-target="#diversityRatingModal"></i></label>
+                        <div class="rating-scale">
+                            {% for i in range(1, 11) %}
+                            <label>
+                                <input type="radio" name="diversity_rating" value="{{ i }}" required>
+                                <span>{{ i }}</span>
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <!-- Photo Upload -->
+                    <div class="mb-3">
+                        <label for="photo" class="form-label">Upload Photo</label>
+                        <input type="file" class="form-control" id="photo" name="photo">
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Add Park</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <!-- Modal for Crowd Rating -->
+    <div class="modal fade" id="crowdRatingModal" tabindex="-1" aria-labelledby="crowdRatingModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="crowdRatingModalLabel">Crowd Rating Instructions</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Rate the park's crowd level for your visit:</p>
+                    <ul>
+                        <li>1: Extremely Crowded</li>
+                        <li>10: No Crowds at All</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Modal for Obstacle Rating -->
+    <div class="modal fade" id="obstacleRatingModal" tabindex="-1" aria-labelledby="obstacleRatingModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="obstacleRatingModalLabel">Obstacle Rating Instructions</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Rate the difficulty of obstacles or play equipment at the park:</p>
+                    <ul>
+                        <li>1: Too easy</li>
+                        <li>10: Difficult obstacles, which is good!</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Modal for Size Rating -->
+    <div class="modal fade" id="sizeRatingModal" tabindex="-1" aria-labelledby="sizeRatingModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="sizeRatingModalLabel">Size Rating Instructions</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Rate the size of the park:</p>
+                    <ul>
+                        <li>1: Very Small</li>
+                        <li>10: Very Large</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Modal for Visibility Rating -->
+    <div class="modal fade" id="visibilityRatingModal" tabindex="-1" aria-labelledby="visibilityRatingModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="visibilityRatingModalLabel">Visibility Rating Instructions</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Rate how easy it is to keep visual contact with your children at the park:</p>
+                    <ul>
+                        <li>1: Hard to See the Children</li>
+                        <li>10: Very Easy to Keep Them Visible</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Modal for Diversity Rating -->
+    <div class="modal fade" id="diversityRatingModal" tabindex="-1" aria-labelledby="diversityRatingModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="diversityRatingModalLabel">Diversity Rating Instructions</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Rate the diversity of the park in terms of people and their backgrounds:</p>
+                    <ul>
+                        <li>1: Great Variety of Diversity</li>
+                        <li>10: No Diversity (Monoculture)</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer style="background-color: #f1f1f1; padding: 2rem 0; text-align: center;">
+        <!-- Copyright Text -->
+        <p>© 2024 RowdyTechnology LLC. All rights reserved.</p>
+
+        <!-- Buy Me a Coffee Button -->
+        <form action="https://www.paypal.com/ncp/payment/7EZJN8WY2TGES" method="post" target="_top" style="display:inline-grid; justify-items:center; align-content:start; gap:0.5rem;">
+            <input class="pp-7EZJN8WY2TGES" type="submit" value="Buy me a coffee." />
+            <img src="https://www.paypalobjects.com/images/Debit_Credit_APM.svg" alt="cards" />
+            <section>Powered by <img src="https://www.paypalobjects.com/paypal-ui/logos/svg/paypal-wordmark-color.svg" alt="paypal" style="height:0.875rem; vertical-align:middle;" /></section>
+        </form>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+
+</html>
