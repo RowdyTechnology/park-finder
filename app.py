@@ -185,6 +185,75 @@ def delete_park(index):
     except Exception as e:
         logging.error(f"Error deleting park: {e}")
         return jsonify({"error": "Failed to delete park."}), 500
+        
+        
+@app.route("/edit_park/<int:index>", methods=["POST"])
+def edit_park(index):
+    try:
+        parks = read_csv(CSV_FILE, fieldnames=None)
+        if 0 <= index < len(parks):
+            park = parks[index]
+
+            name = request.form.get("name", park["name"])
+            latitude = float(request.form.get("latitude", park["latitude"]))
+            longitude = float(request.form.get("longitude", park["longitude"]))
+            ratings = {
+                key: int(request.form.get(key, park[key]))
+                for key in [
+                    "crowd_rating", "obstacle_rating", "size_rating", 
+                    "visibility_rating", "diversity_rating"
+                ]
+            }
+            photo = request.files.get("photo")
+            filename = park["photo"]
+            
+            if photo and allowed_file(photo.filename):
+                filename = secure_filename(photo.filename)
+                photo.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
+            
+            # Update the park information
+            park["name"] = name
+            park["latitude"] = latitude
+            park["longitude"] = longitude
+            park["crowd_rating"] = ratings["crowd_rating"]
+            park["obstacle_rating"] = ratings["obstacle_rating"]
+            park["size_rating"] = ratings["size_rating"]
+            park["visibility_rating"] = ratings["visibility_rating"]
+            park["diversity_rating"] = ratings["diversity_rating"]
+            park["photo"] = f"/uploads/{filename}" if filename else park["photo"]
+            park["date_visited"] = request.form.get("date_visited", park["date_visited"])
+            park["username"] = request.form.get("username", park["username"])
+
+            write_csv(CSV_FILE, parks, fieldnames=park.keys())
+            return jsonify({"message": "Park updated successfully!"})
+
+        else:
+            return jsonify({"error": "Park not found."}), 404
+    except Exception as e:
+        logging.error(f"Error editing park: {e}")
+        return jsonify({"error": "Failed to edit park."}), 500
+
+
+
+
+
+@app.route('/set_home_point', methods=['POST'])
+def set_home_point():
+    try:
+        latitude = request.form['latitude']
+        longitude = request.form['longitude']
+        logging.info(f"Received home point: Latitude = {latitude}, Longitude = {longitude}")
+
+        with open(HOME_POINT_FILE, 'w') as f:
+            f.write(f"{latitude},{longitude}\n")
+        
+        return jsonify({"message": "Home point saved successfully!"})
+
+    except Exception as e:
+        logging.error(f"Error setting home point: {e}")
+        return jsonify({"error": "Failed to save home point. Please try again."}), 500
+
+
 
 # --------------------------
 # Routes: Feature Requests
@@ -244,7 +313,12 @@ def user_stats():
     for park in parks:
         username = park.get("username", "Unknown")
         if username not in stats:
-            stats[username] = {"num_parks": 0, "average_rating": 0}
+            stats[username] = {
+                "num_parks": 0, 
+                "total_ratings": 0, 
+                "average_rating": 0
+            }
+        
         stats[username]["num_parks"] += 1
         ratings = [
             int(park.get("crowd_rating", 0)),
@@ -253,8 +327,16 @@ def user_stats():
             int(park.get("visibility_rating", 0)),
             int(park.get("diversity_rating", 0)),
         ]
-        stats[username]["average_rating"] += calculate_average_ratings(ratings)
+        
+        avg_rating = calculate_average_ratings(ratings)
+        stats[username]["total_ratings"] += avg_rating
+
+    # Calculate the final average rating for each user
+    for username, stat in stats.items():
+        stat["average_rating"] = stat["total_ratings"] / stat["num_parks"] if stat["num_parks"] else 0
+
     return render_template("user_stats.html", user_stats=stats)
+
 
 
 @app.route("/uploads/<filename>")

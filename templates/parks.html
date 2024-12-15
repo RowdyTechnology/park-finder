@@ -63,9 +63,6 @@
                     <a class="nav-link" href="/feature_request">Submit Feature Request</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="/view_feature_requests">View Feature Requests</a>
-                </li>
-                <li class="nav-item">
                     <a class="nav-link" href="/user_stats">User Stats</a>
                 </li>
             </ul>
@@ -395,7 +392,7 @@ const loadParks = () => {
     document.getElementById('editParkForm').addEventListener('submit', (e) => {
         e.preventDefault();
         const formData = new FormData(e.target);
-        axios.post(`/edit_park/${editingIndex}`, Object.fromEntries(formData.entries()))
+        axios.put(`/edit_park/${editingIndex}`, Object.fromEntries(formData.entries()))
             .then(() => {
                 alert('Park updated successfully!');
                 const editModal = bootstrap.Modal.getInstance(document.getElementById('editModal'));

@@ -28,6 +28,17 @@ body.dark-mode {
 	--secondary-color: var(--dark-secondary-color);
 }
 
+/* Dark Mode Bubbles */
+body.dark-mode .clicked-bubble {
+    background-color: #4e4e4e; /* Lighter background for visibility */
+    color: #fff; /* Ensure text is visible */
+}
+
+/* Dark Mode Footer */
+body.dark-mode footer {
+    color: #fff; /* Set footer text color to white in dark mode */
+}
+
 /* Navbar Styles */
 .navbar-dark {
 	background-color: var(--primary-color) !important;
