@@ -1,0 +1,324 @@
+/* General Styles */
+body {
+	font-family: 'Arial', sans-serif;
+	background-color: var(--bg-color, #f8f9fa);
+	color: var(--text-color, #212529);
+	margin: 0;
+	padding: 0;
+}
+
+/* Dark Mode Variables */
+:root {
+	--bg-color: #ffffff;
+	--text-color: #000000;
+	--primary-color: #007bff;
+	--secondary-color: #f1f1f1;
+	--dark-bg-color: #121212;
+	--dark-text-color: #e0e0e0;
+	--dark-primary-color: #1a73e8;
+	--dark-secondary-color: #1f1f1f;
+	--dark-highlight-color: #303030;
+}
+
+/* Dark Mode Styles */
+body.dark-mode {
+	--bg-color: var(--dark-bg-color);
+	--text-color: var(--dark-text-color);
+	--primary-color: var(--dark-primary-color);
+	--secondary-color: var(--dark-secondary-color);
+}
+
+/* Dark Mode Bubbles */
+.dark-mode .clicked-bubble {
+	background-color: #007bff;
+  /* Change to a visible color in dark mode */
+	color: white;
+}
+
+/* Dark Mode Footer */
+.dark-mode footer {
+	color: #ddd;
+}
+
+/* Navbar Styles */
+.navbar-dark {
+	background-color: var(--primary-color) !important;
+}
+
+#darkModeToggle {
+	position: absolute;
+	top: 50%;
+	left: 10px;
+ /* Adjust the left offset to keep it close to the navbar */
+	transform: translateY(-50%);
+	z-index: 10;
+	background-color: transparent;
+	border: none;
+}
+
+#darkModeToggleDesktop {
+	background-color: transparent;
+	border: none;
+}
+
+/* Adjust dark mode icon on hover */
+#darkModeToggle:hover, #darkModeToggleDesktop:hover {
+	cursor: pointer;
+}
+
+/* Header Styling */
+header {
+	background-color: var(--primary-color);
+	color: var(--text-color);
+	padding: 20px 0;
+	text-align: center;
+	box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+header h1 {
+	font-size: 2rem;
+	margin: 0;
+}
+
+header p {
+	font-size: 1.1rem;
+	margin: 5px 0 0;
+}
+
+/* Card Styles */
+.card {
+	border: none;
+	border-radius: 8px;
+	box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+	margin-bottom: 20px;
+	background-color: var(--secondary-color);
+	color: var(--text-color);
+}
+
+body.dark-mode .card {
+	background-color: var(--dark-secondary-color);
+}
+
+/* Card Header */
+.card-header {
+	border-radius: 8px 8px 0 0;
+	font-weight: bold;
+	text-align: center;
+	background-color: var(--primary-color);
+	color: var(--text-color);
+}
+
+/* Card Body */
+.card-body {
+	padding: 20px;
+}
+
+/* Form Styles */
+input, select, button {
+	border-radius: 50px;
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+	border: 1px solid #ddd;
+	padding: 10px 15px;
+	background-color: var(--bg-color);
+	color: var(--text-color);
+}
+
+body.dark-mode input, body.dark-mode select, body.dark-mode button {
+	background-color: var(--dark-highlight-color);
+	color: var(--dark-text-color);
+	border-color: var(--dark-highlight-color);
+}
+
+button {
+	transition: background-color 0.3s, box-shadow 0.3s;
+	border: none;
+	font-size: 1rem;
+}
+
+button:hover {
+	box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+button:focus {
+	outline: 2px solid var(--primary-color);
+	outline-offset: 2px;
+}
+
+/* Rating Scale */
+.rating-scale {
+	display: flex;
+	justify-content: space-around;
+	flex-wrap: wrap;
+	margin-top: 10px;
+	gap: 10px;
+}
+
+.rating-scale label {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	font-size: 14px;
+	cursor: pointer;
+}
+
+.rating-scale input[type="radio"] {
+	display: none;
+}
+
+.rating-scale input[type="radio"] + span {
+	background: var(--secondary-color);
+	color: var(--text-color);
+	padding: 10px 15px;
+	border-radius: 50%;
+	border: 1px solid #ddd;
+	transition: background 0.3s, transform 0.3s, color 0.3s;
+}
+
+body.dark-mode .rating-scale input[type="radio"] + span {
+	background: var(--dark-highlight-color);
+	color: var(--dark-text-color);
+	border-color: var(--dark-highlight-color);
+}
+
+.rating-scale input[type="radio"]:checked + span {
+	background: var(--primary-color);
+	color: white;
+	transform: scale(1.1);
+}
+
+/* Table Styles */
+.table {
+	background-color: var(--secondary-color);
+	color: var(--text-color);
+	border-radius: 8px;
+	overflow: hidden;
+	box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+body.dark-mode .table {
+	background-color: var(--dark-highlight-color);
+	color: var(--dark-text-color);
+}
+
+.table th {
+	background-color: var(--primary-color);
+	color: white;
+	font-weight: bold;
+	text-align: center;
+	padding: 10px;
+}
+
+.table td {
+	text-align: center;
+	vertical-align: middle;
+	padding: 10px;
+}
+
+.table img {
+	border-radius: 8px;
+}
+
+/* Action Buttons */
+.action-buttons {
+	display: flex;
+	justify-content: center;
+	gap: 15px;
+ /* Consistent spacing */
+	flex-wrap: wrap;
+}
+
+button {
+	padding: 10px 15px;
+}
+
+/* Footer */
+footer {
+	background-color: var(--primary-color);
+	color: var(--text-color);
+	text-align: center;
+	padding: 10px 0;
+	margin-top: 20px;
+	font-size: 0.9rem;
+}
+
+body.dark-mode footer {
+	background-color: var(--dark-primary-color);
+	color: var(--dark-text-color);
+}
+
+/* Dropdown Styles */
+.navbar-toggler {
+	border: none;
+}
+
+.navbar-toggler:focus {
+	outline: 2px solid var(--primary-color);
+	outline-offset: 2px;
+}
+
+.navbar-nav .nav-link {
+	padding: 8px 15px;
+}
+
+.navbar-nav .nav-link:hover, 
+.navbar-nav .nav-link.active {
+	background-color: var(--primary-color);
+	color: white;
+	border-radius: 50px;
+}
+
+body.dark-mode .navbar-nav .nav-link {
+	color: var(--dark-text-color);
+}
+
+body.dark-mode .navbar-nav .nav-link:hover, 
+body.dark-mode .navbar-nav .nav-link.active {
+	background-color: var(--dark-primary-color);
+	color: var(--dark-text-color);
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+	header h1 {
+		font-size: 1.8rem;
+	}
+
+	header p {
+		font-size: 1rem;
+	}
+
+	.rating-scale {
+		gap: 5px;
+ /* Reduce spacing on small screens */
+		;
+	}
+
+	button {
+		font-size: 0.9rem;
+		padding: 8px 12px;
+	}
+
+	.action-buttons {
+		flex-direction: column;
+ /* Stack buttons vertically */
+		gap: 10px;
+ /* Add spacing between stacked buttons */
+		;
+	}
+
+	.table th, .table td {
+		font-size: 0.85rem;
+		padding: 8px;
+	}
+}
+/* Navbar dark mode and toggler alignment */
+.navbar .d-flex {
+	gap: 10px;
+ /* Add spacing between dark mode toggle and the toggler */;
+}
+
+.navbar-nav {
+	display: flex;
+	justify-content: end;
+ /* Align links to the right */;
+}
